@@ -1,9 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:pomotime/presentation/screens/home.dart';
+import 'core/providers/timer_provider.dart';
+import 'core/providers/task_provider.dart';
+import 'core/providers/user_provider.dart';
+import 'core/services/ambiance_service.dart';
 import 'routes/app_routes.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => AmbianceService()),
+        ChangeNotifierProxyProvider2<TaskProvider, UserProvider, TimerProvider>(
+          create: (_) => TimerProvider(),
+          update: (_, tasks, user, timer) {
+            timer!.updateDependencies(tasks, user);
+            return timer;
+          },
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
