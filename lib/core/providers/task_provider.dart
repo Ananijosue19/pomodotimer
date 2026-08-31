@@ -32,8 +32,12 @@ class TaskProvider with ChangeNotifier {
     await prefs.setString(_storageKey, encoded);
   }
 
-  void addTask(String title, {int estimatedPomodoros = 1}) {
-    final newTask = TaskModel(title: title, estimatedPomodoros: estimatedPomodoros);
+  void addTask(String title, {int estimatedPomodoros = 1, TaskCategory category = TaskCategory.autre}) {
+    final newTask = TaskModel(
+      title: title, 
+      estimatedPomodoros: estimatedPomodoros,
+      category: category,
+    );
     _tasks.add(newTask);
     _saveTasks();
     notifyListeners();

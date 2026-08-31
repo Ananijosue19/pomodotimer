@@ -1,6 +1,7 @@
-import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/material.dart';
-import 'package:pomotime/presentation/screens/onePage.dart';
+import 'package:pomotime/presentation/screens/timer_page.dart';
+import 'package:pomotime/presentation/screens/settings_page.dart';
+import 'package:pomotime/presentation/screens/stats_page.dart';
 import 'package:remixicon/remixicon.dart';
 
 class Home extends StatefulWidget {
@@ -12,7 +13,11 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int selectedIndex = 0;
-  final List<Widget> pages = [Onepage(), Twopage(), ThreePage()];
+  final List<Widget> pages = [
+    const TimerPage(),
+    const SettingsPage(),
+    const StatsPage(),
+  ];
   void _onItemTapped(int index) {
     setState(() => selectedIndex = index);
   }
@@ -25,7 +30,7 @@ class _HomeState extends State<Home> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Remix.timer_2_line),
-            label: 'Timer',
+            label: 'Minuteur',
           ),
           BottomNavigationBarItem(
             icon: Icon(Remix.settings_3_line),

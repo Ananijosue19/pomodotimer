@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:pomotime/presentation/screens/home.dart';
+import 'package:pomotime/presentation/screens/splash_screen.dart';
 import 'core/providers/timer_provider.dart';
 import 'core/providers/task_provider.dart';
 import 'core/providers/user_provider.dart';
 import 'core/services/ambiance_service.dart';
-import 'routes/app_routes.dart';
+import 'core/services/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
   runApp(
     MultiProvider(
       providers: [
@@ -34,7 +36,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Pomodoro Timer',
+      title: 'Minuteur Pomodoro',
       theme: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.red,
@@ -43,7 +45,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       debugShowCheckedModeBanner: false,
-      home: const Home(),
+      home: const SplashScreen(),
     );
   }
 }

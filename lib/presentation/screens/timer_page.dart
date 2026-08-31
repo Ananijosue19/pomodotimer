@@ -4,10 +4,10 @@ import 'package:remixicon/remixicon.dart';
 import '../../core/providers/timer_provider.dart';
 import '../../core/providers/task_provider.dart';
 import '../../core/providers/user_provider.dart';
-import '../../core/services/ambiance_service.dart';
+import '../../data/models/task_model.dart';
 
-class Onepage extends StatelessWidget {
-  const Onepage({super.key});
+class TimerPage extends StatelessWidget {
+  const TimerPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +52,7 @@ class Onepage extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: Row(
@@ -101,12 +101,31 @@ class Onepage extends StatelessWidget {
                       ),
                       Text(
                         timerProvider.currentSession == SessionType.focus 
-                          ? "FOCUS" : "PAUSE",
+                          ? "CONCENTRATION" : (timerProvider.currentSession == SessionType.shortBreak ? "PAUSE COURTE" : "PAUSE LONGUE"),
                         style: const TextStyle(
                           letterSpacing: 2,
                           color: Colors.grey,
                           fontWeight: FontWeight.w500,
                         ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Pomodoro cycle indicators
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(4, (index) {
+                          int completedInCycle = timerProvider.completedPomodorosInCycle % 4;
+                          if (timerProvider.completedPomodorosInCycle > 0 && completedInCycle == 0 && timerProvider.currentSession != SessionType.focus) {
+                             completedInCycle = 4;
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: Icon(
+                              index < completedInCycle ? Remix.checkbox_blank_circle_fill : Remix.checkbox_blank_circle_line,
+                              size: 12,
+                              color: Colors.red.withValues(alpha: 0.5),
+                            ),
+                          );
+                        }),
                       ),
                     ],
                   ),
@@ -122,6 +141,7 @@ class Onepage extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Remix.refresh_line, size: 30),
                     onPressed: () => timerProvider.resetTimer(),
+                    tooltip: "Réinitialiser",
                   ),
                   const SizedBox(width: 20),
                   GestureDetector(
@@ -146,8 +166,9 @@ class Onepage extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Remix.skip_forward_fill, size: 30),
                     onPressed: () {
-                      // Skip session logic
+                      // Skip logic
                     },
+                    tooltip: "Passer",
                   ),
                 ],
               ),
@@ -193,14 +214,28 @@ class Onepage extends StatelessWidget {
                         final task = provider.tasks[index];
                         return ListTile(
                           title: Text(task.title),
-                          subtitle: Text("${task.completedPomodoros}/${task.estimatedPomodoros} Pomos"),
-                          leading: Radio<String?>(
-                            value: task.id,
-                            groupValue: provider.selectedTask?.id,
-                            onChanged: (val) {
-                              provider.selectTask(val);
-                              Navigator.pop(context);
-                            },
+                          subtitle: Text("${task.completedPomodoros}/${task.estimatedPomodoros} Pomos • ${task.category.name}"),
+                          leading: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: task.category.color,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Radio<String?>(
+                                value: task.id,
+                                groupValue: provider.selectedTask?.id,
+                                onChanged: (val) {
+                                  provider.selectTask(val);
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
                           ),
                           trailing: IconButton(
                             icon: const Icon(Remix.delete_bin_line, size: 20),
@@ -224,181 +259,59 @@ class Onepage extends StatelessWidget {
 
   void _showAddTaskDialog(BuildContext context, TaskProvider provider, Function setModalState) {
     final controller = TextEditingController();
+    TaskCategory selectedCategory = TaskCategory.autre;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Nouvelle Tâche"),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: "Nom de la tâche"),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                provider.addTask(controller.text);
-                Navigator.pop(context);
-                setModalState(() {});
-              }
-            },
-            child: const Text("Ajouter"),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class Twopage extends StatelessWidget {
-  const Twopage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final ambiance = Provider.of<AmbianceService>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Paramètres"),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text("Ambiance Sonore", 
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          _buildAmbianceTile(context, ambiance, "Aucun", AmbianceType.none, Remix.volume_mute_line),
-          _buildAmbianceTile(context, ambiance, "Pluie", AmbianceType.rain, Remix.rainy_line),
-          _buildAmbianceTile(context, ambiance, "Bruit Blanc", AmbianceType.whiteNoise, Remix.windy_line),
-          _buildAmbianceTile(context, ambiance, "Forêt", AmbianceType.forest, Remix.leaf_line),
-          
-          const Divider(height: 40),
-          
-          const Text("Volume", 
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Slider(
-            value: ambiance.volume,
-            activeColor: Colors.red,
-            onChanged: (val) => ambiance.setVolume(val),
-          ),
-          
-          const Divider(height: 40),
-          
-          const Text("Durée des sessions", 
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const ListTile(
-            title: Text("Focus"),
-            trailing: Text("25 min"),
-          ),
-          const ListTile(
-            title: Text("Pause courte"),
-            trailing: Text("5 min"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAmbianceTile(BuildContext context, AmbianceService service, String title, AmbianceType type, IconData icon) {
-    final isSelected = service.currentType == type;
-    return ListTile(
-      leading: Icon(icon, color: isSelected ? Colors.red : Colors.grey),
-      title: Text(title, style: TextStyle(color: isSelected ? Colors.red : Colors.black)),
-      trailing: isSelected ? const Icon(Remix.check_line, color: Colors.red) : null,
-      onTap: () => service.setAmbiance(type),
-    );
-  }
-}
-
-class ThreePage extends StatelessWidget {
-  const ThreePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Statistiques"),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            _buildStatCard(
-              "Niveau", 
-              userProvider.level.toString(), 
-              Remix.flashlight_line, 
-              Colors.blue
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("Nouvelle Tâche"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(hintText: "Nom de la tâche"),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 20),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text("Catégorie :", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  children: TaskCategory.values.map((cat) {
+                    final isSelected = selectedCategory == cat;
+                    return GestureDetector(
+                      onTap: () => setDialogState(() => selectedCategory = cat),
+                      child: Chip(
+                        label: Text(cat.name, style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontSize: 12)),
+                        backgroundColor: isSelected ? cat.color : cat.color.withValues(alpha: 0.1),
+                        side: BorderSide.none,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
-            const SizedBox(height: 15),
-            _buildStatCard(
-              "Série Actuelle", 
-              "${userProvider.streak} Jours", 
-              Remix.fire_line, 
-              Colors.orange
-            ),
-            const SizedBox(height: 15),
-            _buildStatCard(
-              "Total Pomodoros", 
-              userProvider.totalPomodoros.toString(), 
-              Remix.timer_line, 
-              Colors.red
-            ),
-            const SizedBox(height: 15),
-            _buildStatCard(
-              "Expérience Totale", 
-              "${userProvider.xp} XP", 
-              Remix.star_line, 
-              Colors.yellow[700]!
-            ),
-            const SizedBox(height: 30),
-            const Text("Prochain Niveau", style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: userProvider.levelProgress,
-              minHeight: 15,
-              borderRadius: BorderRadius.circular(10),
-              backgroundColor: Colors.grey[200],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-            ),
-            const SizedBox(height: 5),
-            Text("${(userProvider.levelProgress * 100).toInt()}%"),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 30),
-          const SizedBox(width: 20),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(color: Colors.grey)),
-              Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.text.isNotEmpty) {
+                    provider.addTask(controller.text, category: selectedCategory);
+                    Navigator.pop(context);
+                    setModalState(() {});
+                  }
+                },
+                child: const Text("Ajouter"),
+              ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
